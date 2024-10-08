@@ -3,10 +3,7 @@ package com.app.core;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.intuit.karate.RuntimeHook;
 import com.intuit.karate.Suite;
-import com.intuit.karate.core.FeatureRuntime;
-import com.intuit.karate.core.ScenarioRuntime;
-import com.intuit.karate.core.Step;
-import com.intuit.karate.core.StepResult;
+import com.intuit.karate.core.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -21,12 +18,9 @@ import java.util.Map;
 public class KarateHook implements RuntimeHook {
 
     private static final Logger logger = LoggerFactory.getLogger(KarateHook.class);
-
-    // Global list to collect test results
     private static final List<Map<String, Object>> testResults = new ArrayList<>();
 
     public KarateHook() {
-        // Initialize the hook
     }
 
     @Override
@@ -37,16 +31,35 @@ public class KarateHook implements RuntimeHook {
 
     @Override
     public void afterScenario(ScenarioRuntime sr) {
+
+        //example on how to read karate configuration js file config object value
+        String appName = getConfiguration(sr,"appname");
+        String appId = getConfiguration(sr,"appId");
         System.err.println("Finished Test: " + sr.scenario.getName() + " | Is Failed: " + sr.result.isFailed());
 
-        // Collect test result data
         Map<String, Object> resultData = new HashMap<>();
+        resultData.put("appName", appName);
+        resultData.put("appId", appId);
         resultData.put("name", sr.scenario.getName());
         resultData.put("status", sr.result.isFailed() ? "Failed" : "Passed");
         resultData.put("timestamp", LocalDateTime.now().toString());
 
-        // Add result to the global list
         testResults.add(resultData);
+    }
+
+    /**
+     * To read Karate configuration js file config values
+     * @param scenarioRuntime
+     * @param propertyKey
+     * @return
+     */
+    private static String getConfiguration(ScenarioRuntime scenarioRuntime, String propertyKey) {
+        for (String key : scenarioRuntime.engine.vars.keySet()) {
+            if(key.equalsIgnoreCase(propertyKey))
+                return scenarioRuntime.engine.vars.get(key).getAsString();
+        }
+        return null; //use below line to throw exception if key not found
+       //throw new RuntimeException("Key '"+propertyKey+"' not found in karate-config.js");
     }
 
     @Override
@@ -106,7 +119,7 @@ public class KarateHook implements RuntimeHook {
 
         try {
             mapper.writeValue(file, testResults);
-            //TODO : user can choose to generate an html file, or write to a db for result persistance, or post to a reporting system
+            //TODO : user can choose to generate an html file, or write to a db for result persistence, or post to a reporting system
             System.err.println("Test results written to: " + file.getAbsolutePath());
         } catch (IOException e) {
             logger.error("Error writing test results to JSON: {}", e.getMessage(), e);

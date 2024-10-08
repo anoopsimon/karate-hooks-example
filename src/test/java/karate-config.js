@@ -6,7 +6,8 @@ function fn() {
   }
   var config = {
     env: env,
-    myVarName: 'someValue'
+    appName: 'Bing',
+    appId:1234,
   }
   if (env == 'dev') {
     // customize
